@@ -18,6 +18,11 @@
 
 export const THEMES = [
   {
+    id: 'pricetag',
+    label: 'Price Tag',
+    description: 'Price Guessr theme: deep navy with a sticker-yellow accent.',
+  },
+  {
     id: 'slate',
     label: 'Slate',
     description: 'Neutral dark placeholder default. Replace with your own theme.',

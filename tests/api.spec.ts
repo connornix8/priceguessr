@@ -16,3 +16,12 @@ test.describe('API tests', () => {
     // If the app loaded and connected, the WS endpoint works
   })
 })
+
+test.describe('Game actions', () => {
+  test('refuse callers who are not signed in', async ({ request }) => {
+    for (const name of ['createGame', 'joinGame', 'submitGuess', 'revealRound']) {
+      const res = await request.post(`/api/actions/${name}`, { data: {} })
+      expect(res.status(), name).toBe(401)
+    }
+  })
+})

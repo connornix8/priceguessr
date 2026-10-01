@@ -17,5 +17,7 @@
 
 export const integrations: Record<string, { billing: 'developer' | 'user' }> = {
   google: { billing: 'user' },
-  // openai: { billing: 'developer' },
+  // Product searches are paid by the app owner (players never need credits).
+  // Only server actions call it, behind sign-in and a per-user daily limit.
+  amazon: { billing: 'developer' },
 }

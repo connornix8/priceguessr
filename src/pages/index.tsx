@@ -1,49 +1,64 @@
 /**
- * Landing page — a STATIC page.
- *
- * It lives at the top level of src/pages/ (not under (app)/), so it renders
- * with no DeepSpace providers: no auth session fetch, no records WebSocket.
- * That makes it cheap to serve and safe for logged-out / crawler traffic.
- *
- * Need live data or auth here? Move this file to src/pages/(app)/index.tsx
- * and it becomes a dynamic page. Conversely, any page you want to keep static
- * (marketing, docs, legal) belongs at this top level.
- *
- * Top-level pages are also prerendered to static HTML at build
- * (prerender.ts, via vite.config.ts) so crawlers read real content.
- * Keep them renderable without a browser: no window/document during render,
- * prose in HTML text, reveal animations in CSS keyframes rather than JS-driven
- * initial states. `<Seo>` comes first and reads src/seo.ts.
+ * Landing page — a STATIC page (no auth call, no WebSocket), prerendered at
+ * build so it loads instantly and link previews/crawlers can read it.
  */
 
 import { Link } from 'react-router-dom'
 import { Seo } from '../components/Seo'
-import { APP_NAME } from '../constants'
 import { seo } from '../seo'
+
+const STEPS = [
+  { n: '1', title: 'Make a room', body: 'Pick a category. We pull real products from Amazon and hide the prices.' },
+  { n: '2', title: 'Share the code', body: 'Friends join with a 4-letter code from any phone or laptop. Or play solo.' },
+  { n: '3', title: 'Guess & reveal', body: 'Everyone locks in a price. Closest guess scores up to 1,000 points.' },
+]
 
 export default function Landing() {
   return (
     <>
       <Seo {...seo} path="/" />
-      <div
-        data-testid="static-landing"
-        className="flex min-h-screen flex-col items-center justify-center px-6 text-center"
-      >
-        <p className="mb-3 text-sm uppercase tracking-widest text-muted-foreground">{APP_NAME}</p>
-        <h1 className="mb-4 max-w-2xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-          A DeepSpace app with a static front door
-        </h1>
-        <p className="mb-8 max-w-md text-muted-foreground">
-          This landing page ships no auth call and no realtime connection — it's a
-          plain static page. The live app, with sign-in and synced data, lives
-          behind the link below.
-        </p>
-        <Link
-          to="/home"
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-        >
-          Enter the app
-        </Link>
+      <div data-testid="static-landing" className="flex min-h-screen flex-col">
+        <header className="mx-auto flex w-full max-w-5xl items-center px-4 py-5">
+          <span className="flex items-center gap-2 font-bold">
+            <span className="rounded-md bg-primary px-1.5 py-0.5 text-xs font-black text-primary-foreground">$?</span>
+            Price Guessr
+          </span>
+        </header>
+
+        <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center px-4 py-12">
+          <p className="mb-4 inline-block w-fit -rotate-2 rounded-lg bg-primary px-3 py-1 text-sm font-bold text-primary-foreground">
+            Real products. Real prices.
+          </p>
+          <h1 className="max-w-3xl text-5xl font-black leading-[1.05] tracking-tight sm:text-7xl">
+            How much does <span className="text-primary">that</span> cost?
+          </h1>
+          <p className="mt-6 max-w-xl text-lg text-muted-foreground">
+            A live price-guessing game for friends. Everyone sees the same Amazon product,
+            locks in a guess, and the reveal decides who really knows what things cost.
+          </p>
+          <div className="mt-10">
+            <Link
+              to="/play"
+              className="inline-flex items-center rounded-xl bg-primary px-7 py-3.5 text-base font-bold text-primary-foreground transition-transform hover:-translate-y-0.5"
+            >
+              Play now
+            </Link>
+          </div>
+
+          <ol className="mt-20 grid gap-4 sm:grid-cols-3">
+            {STEPS.map((s) => (
+              <li key={s.n} className="rounded-2xl border border-border bg-card p-5">
+                <span className="font-mono text-sm text-primary">{s.n}</span>
+                <h2 className="mt-1 text-lg font-semibold">{s.title}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">{s.body}</p>
+              </li>
+            ))}
+          </ol>
+        </main>
+
+        <footer className="mx-auto w-full max-w-5xl px-4 py-6 text-xs text-muted-foreground">
+          Built on DeepSpace. Product data from Amazon search results; prices change over time.
+        </footer>
       </div>
     </>
   )

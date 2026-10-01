@@ -16,16 +16,15 @@
  * publishes a Disallow-all robots.txt and no sitemap).
  */
 
-import { APP_NAME } from './constants'
-
 /** Injected by prerender.ts: `https://<name>.app.space` from wrangler.toml, or
  *  what `deepspace deploy` passes (staging: spacestest.com). Absent in unit
  *  tests, hence the guard. */
 declare const __DEEPSPACE_SITE_ORIGIN__: string | undefined
 
 export const seo = {
-  title: APP_NAME,
-  description: `${APP_NAME} is a real-time collaborative app.`,
+  title: 'Price Guessr | Guess the price of real Amazon products with friends',
+  description:
+    'A live multiplayer price-guessing game. Make a room, share the 4-letter code, and see who can guess the real price of real Amazon products.',
   /** Public origin for canonical URLs, og:url, and the sitemap — no trailing
    *  slash. Replace with the custom domain once one is attached, e.g.
    *  'https://www.example.com'. */

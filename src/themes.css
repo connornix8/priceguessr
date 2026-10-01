@@ -44,3 +44,30 @@
   --color-shell: #fafafa;
   --color-shell-panel: #ffffff;
 }
+
+/* Price Guessr — "price tag": deep navy game-show board, sticker-yellow accent. */
+[data-theme="pricetag"] {
+  color-scheme: dark;
+  --color-background: #0b1020;
+  --color-foreground: #f1f3f9;
+  --color-card: #141b33;
+  --color-card-foreground: #f1f3f9;
+  --color-popover: #141b33;
+  --color-popover-foreground: #f1f3f9;
+  --color-primary: #fcd34d;
+  --color-primary-foreground: #1c1500;
+  --color-secondary: #1d2645;
+  --color-secondary-foreground: #f1f3f9;
+  --color-muted: #1d2645;
+  --color-muted-foreground: #9aa4c4;
+  --color-accent: #253058;
+  --color-accent-foreground: #f1f3f9;
+  --color-destructive: #f87171;
+  --color-destructive-foreground: #1c0505;
+  --color-border: #263157;
+  --color-input: #2c3862;
+  --color-ring: #fcd34d;
+  --color-shell: #0b1020;
+  --color-shell-panel: #141b33;
+  --radius: 0.85rem;
+}
