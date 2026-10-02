@@ -6,6 +6,7 @@ import {
   parsePriceToCents,
   scoreGuess,
   shuffle,
+  verdictFor,
 } from './logic'
 
 describe('parsePriceToCents', () => {
@@ -62,5 +63,14 @@ describe('room codes', () => {
 describe('shuffle', () => {
   it('keeps the same items', () => {
     expect(shuffle([1, 2, 3, 4]).sort()).toEqual([1, 2, 3, 4])
+  })
+})
+
+describe('verdictFor', () => {
+  it('describes how far off and in which direction', () => {
+    expect(verdictFor(7900, 6499)).toMatchObject({ label: 'Not bad', detail: 'You were 22% too high' })
+    expect(verdictFor(6000, 6499)).toMatchObject({ label: 'So close!', detail: 'You were 8% too low' })
+    expect(verdictFor(6499, 6499)).toMatchObject({ label: 'Spot on!', detail: 'You nailed the exact price' })
+    expect(verdictFor(20000, 6499)).toMatchObject({ label: 'Way off…', tone: 'bad' })
   })
 })

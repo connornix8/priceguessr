@@ -76,8 +76,19 @@ test('two players play a round and both see the reveal', async ({ users }) => {
     .poll(() => guestFrames.slice(framesBeforeReveal).some((f) => f.includes(`"price":${cents}`)))
     .toBe(true)
 
+  // Each player gets a verdict about their own guess.
+  await expect(host.page.getByTestId('verdict')).toContainText(/You were \d+% too (high|low)|nailed/)
+
   // Only the host can advance; both screens move to round 2.
   await expect(guest.page.getByTestId('next-round')).toHaveCount(0)
   await host.page.getByTestId('next-round').click()
+  await expect(guest.page.getByTestId('round-label')).toHaveText('Round 2 of 3')
+
+  // Clicking away doesn't lose the game: "New game" lists it with a Rejoin link.
+  await guest.page.getByRole('link', { name: 'New game' }).first().click()
+  const inProgress = guest.page.getByTestId('games-in-progress')
+  await expect(inProgress).toContainText(code)
+  // Pick THIS game's row: other specs using the same test accounts may have games too.
+  await inProgress.getByRole('listitem').filter({ hasText: code }).getByRole('link', { name: 'Rejoin' }).click()
   await expect(guest.page.getByTestId('round-label')).toHaveText('Round 2 of 3')
 })

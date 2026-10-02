@@ -3,11 +3,12 @@
  */
 
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth, useQuery } from 'deepspace'
 import { Button, Input, useToast } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { callAction } from '../../../game/api'
-import { CATEGORIES, normalizeRoomCode, ROUND_OPTIONS } from '../../../game/logic'
+import { CATEGORIES, findCategory, normalizeRoomCode, ROUND_OPTIONS } from '../../../game/logic'
 
 export default function PlayPage() {
   const navigate = useNavigate()
@@ -129,7 +130,59 @@ export default function PlayPage() {
             Join
           </Button>
         </form>
+        <GamesInProgress />
       </section>
     </div>
+  )
+}
+
+/**
+ * Games this user is still part of, so clicking away mid-game never loses it.
+ * Player rows are public to signed-in members; we filter to our own userId.
+ */
+function GamesInProgress() {
+  const { userId } = useAuth()
+  const mine = useQuery<{ code?: string }>('players', {
+    where: { userId: userId ?? '' },
+    orderBy: 'createdAt',
+    orderDir: 'desc',
+    limit: 5,
+  })
+  const codes = mine.records.map((r) => r.data.code).filter((c): c is string => !!c)
+  if (codes.length === 0) return null
+  return (
+    <div className="mt-8 border-t border-border pt-6" data-testid="games-in-progress">
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        Your games in progress
+      </h3>
+      <ul className="mt-2 space-y-2">
+        {codes.map((code) => (
+          <ActiveGameRow key={code} code={code} />
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+/** One row per game; hides itself once the game has finished. */
+function ActiveGameRow({ code }: { code: string }) {
+  const { records } = useQuery<{ status: string; category: string; roundIndex: number; totalRounds: number }>(
+    'games',
+    { where: { code }, limit: 1 },
+  )
+  const game = records[0]?.data
+  if (!game || game.status === 'finished') return null
+  const category = findCategory(game.category)
+  const progress = game.status === 'lobby' ? 'In lobby' : `Round ${game.roundIndex + 1} of ${game.totalRounds}`
+  return (
+    <li className="flex items-center gap-3 rounded-xl border border-border bg-secondary/40 px-3 py-2 text-sm">
+      <span className="font-mono font-bold tracking-widest text-primary">{code}</span>
+      <span className="flex-1 truncate text-muted-foreground">
+        {category?.emoji} {category?.label} · {progress}
+      </span>
+      <Link to={`/game/${code}`} className="font-semibold text-foreground hover:text-primary">
+        Rejoin
+      </Link>
+    </li>
   )
 }

@@ -93,3 +93,24 @@ export const ids = {
   player: (gameId: string, userId: string) => `${gameId}_p_${userId}`,
   guess: (roundId: string, userId: string) => `${roundId}_g_${userId}`,
 }
+
+export interface Verdict {
+  /** Short headline, e.g. "So close!" */
+  label: string
+  /** Detail, e.g. "You were 22% too high" */
+  detail: string
+  tone: 'great' | 'good' | 'meh' | 'bad'
+}
+
+/** Friendly reveal message based on how far off a guess was, in percent. */
+export function verdictFor(guessCents: number, priceCents: number): Verdict {
+  const diff = guessCents - priceCents
+  const pct = Math.round((Math.abs(diff) / priceCents) * 100)
+  const direction = diff > 0 ? 'too high' : 'too low'
+  const detail = pct === 0 ? 'You nailed the exact price' : `You were ${pct}% ${direction}`
+  if (pct <= 2) return { label: 'Spot on!', detail, tone: 'great' }
+  if (pct <= 10) return { label: 'So close!', detail, tone: 'great' }
+  if (pct <= 25) return { label: 'Not bad', detail, tone: 'good' }
+  if (pct <= 50) return { label: 'A bit off', detail, tone: 'meh' }
+  return { label: 'Way off…', detail, tone: 'bad' }
+}

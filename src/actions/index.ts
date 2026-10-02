@@ -41,6 +41,7 @@ interface Game extends Record<string, unknown> {
 interface Player extends Record<string, unknown> {
   gameId: string
   userId: string
+  code?: string
   score: number
   guessedRound: number
 }
@@ -59,10 +60,14 @@ interface RoundResult {
   points: number
 }
 
-/** Keep spend bounded: each new game may trigger one paid Amazon search. */
-const MAX_GAMES_PER_USER_PER_DAY = 10
-/** Once a category has this many cached products, stop searching Amazon. */
+/**
+ * Amazon spend is bounded by POOL_TARGET: once a category has this many cached
+ * products we never search again (~3 searches per category, ever). Games built
+ * from the cache are free, so the per-user limit only guards against database
+ * spam and is generous enough for a long game night.
+ */
 const POOL_TARGET = 45
+const MAX_GAMES_PER_USER_PER_DAY = 50
 
 const fail = (error: string): ActionResult<never> => ({ success: false, error })
 
@@ -243,7 +248,7 @@ export const actions: Record<string, ActionHandler<Env>> = {
 
     await tools.create<Player>(
       'players',
-      { gameId, userId, score: 0, guessedRound: -1 },
+      { gameId, userId, code, score: 0, guessedRound: -1 },
       ids.player(gameId, userId),
     )
     // The game row goes last: once it exists, everything it points to exists.
@@ -274,7 +279,7 @@ export const actions: Record<string, ActionHandler<Env>> = {
       if (players.length >= 12) return fail('That room is full')
       await tools.create<Player>(
         'players',
-        { gameId: game.recordId, userId, score: 0, guessedRound: -1 },
+        { gameId: game.recordId, userId, code, score: 0, guessedRound: -1 },
         playerId,
       )
     }

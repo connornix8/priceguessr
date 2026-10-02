@@ -14,7 +14,14 @@ import { Check, Copy, Crown, ExternalLink, Star } from 'lucide-react'
 import { Button, Input, useToast } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { callAction, type ActionName } from '../../../../game/api'
-import { findCategory, formatCents, MAX_POINTS, normalizeRoomCode } from '../../../../game/logic'
+import {
+  findCategory,
+  formatCents,
+  MAX_POINTS,
+  normalizeRoomCode,
+  verdictFor,
+  type Verdict,
+} from '../../../../game/logic'
 
 type GameStatus = 'lobby' | 'guessing' | 'revealed' | 'finished'
 
@@ -82,7 +89,7 @@ export default function GamePage() {
   return (
     <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 lg:grid-cols-[1fr_300px]">
       <div className="min-w-0">
-        <GameHeader game={game} />
+        <GameHeader game={game} rounds={rounds.records.map((r) => r.data)} />
         {game.status === 'lobby' && (
           <Lobby code={game.code} gameId={gameId} isHost={isHost} playerCount={playerRows.length} />
         )}
@@ -100,6 +107,9 @@ export default function GamePage() {
         {game.status === 'finished' && (
           <FinalResults rounds={rounds.records.map((r) => r.data)} />
         )}
+        {(game.status === 'guessing' || game.status === 'revealed') && (
+          <PastRounds rounds={rounds.records.map((r) => r.data)} currentIndex={game.roundIndex} />
+        )}
       </div>
       <Scoreboard
         players={playerRows}
@@ -113,6 +123,9 @@ export default function GamePage() {
 }
 
 // ---------------------------------------------------------------------------
+
+/** A round counts as revealed only once the server has written a real price. */
+const isRevealed = (r: Round) => typeof r.price === 'number' && r.price > 0
 
 function useAction() {
   const { error } = useToast()
@@ -139,25 +152,69 @@ function Centered({ children }: { children: React.ReactNode }) {
   )
 }
 
-function GameHeader({ game }: { game: Game }) {
+function GameHeader({ game, rounds }: { game: Game; rounds: Round[] }) {
   const category = findCategory(game.category)
+  const [copied, setCopied] = useState(false)
+
+  async function copyLink() {
+    await navigator.clipboard.writeText(`${window.location.origin}/game/${game.code}`)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+
   const roundLabel =
     game.status === 'lobby'
       ? `${game.totalRounds} rounds`
       : game.status === 'finished'
         ? 'Game over'
         : `Round ${game.roundIndex + 1} of ${game.totalRounds}`
+
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-      <span className="rounded-md bg-primary px-2 py-0.5 font-mono font-bold tracking-widest text-primary-foreground">
-        {game.code}
+    <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+      <span className="flex items-center gap-2">
+        Room code
+        <span className="rounded-md bg-primary px-2 py-0.5 font-mono font-bold tracking-widest text-primary-foreground">
+          {game.code}
+        </span>
+        <button
+          onClick={copyLink}
+          aria-label="Copy invite link"
+          title="Copy invite link"
+          className="rounded-md p-1 hover:bg-secondary hover:text-foreground"
+        >
+          {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+        </button>
       </span>
       <span>
         {category?.emoji} {category?.label}
       </span>
-      <span aria-hidden>·</span>
-      <span data-testid="round-label">{roundLabel}</span>
+      <span className="flex items-center gap-2">
+        <span data-testid="round-label">{roundLabel}</span>
+        {game.status !== 'lobby' && <ProgressDots game={game} rounds={rounds} />}
+      </span>
     </div>
+  )
+}
+
+/** One dot per round: filled = done, ringed = current, faint = still to come. */
+function ProgressDots({ game, rounds }: { game: Game; rounds: Round[] }) {
+  return (
+    <span className="flex gap-1" aria-hidden>
+      {Array.from({ length: game.totalRounds }, (_, i) => {
+        const done = rounds.some((r) => r.index === i && isRevealed(r))
+        const current = i === game.roundIndex && game.status !== 'finished'
+        return (
+          <span
+            key={i}
+            className={cn(
+              'h-2.5 w-2.5 rounded-full',
+              done ? 'bg-primary' : 'bg-secondary',
+              current && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
+            )}
+          />
+        )
+      })}
+    </span>
   )
 }
 
@@ -254,7 +311,7 @@ function RoundView({
   // Guesses are hidden from every browser until the reveal, so we remember
   // our own locked-in guess locally just to show it back.
   const [myGuess, setMyGuess] = useState<number | null>(null)
-  const revealed = game.status === 'revealed' && round.price !== null
+  const revealed = game.status === 'revealed' && isRevealed(round)
 
   const waitingOn = players.filter((p) => p.guessedRound !== game.roundIndex)
   const isLastRound = game.roundIndex + 1 >= game.totalRounds
@@ -373,6 +430,13 @@ function RoundView({
   )
 }
 
+const TONE_CLASS: Record<Verdict['tone'], string> = {
+  great: 'text-success',
+  good: 'text-primary',
+  meh: 'text-warning',
+  bad: 'text-destructive',
+}
+
 function Reveal({
   round,
   players,
@@ -384,7 +448,10 @@ function Reveal({
   nameOf: (uid: string) => string
   userId: string | null
 }) {
+  const price = round.price ?? 0
   const results = round.results ?? {}
+  const mine = userId ? results[userId] : undefined
+  const verdict = mine ? verdictFor(mine.guess, price) : null
   const rows = players
     .map((p) => ({ userId: p.userId, result: results[p.userId] }))
     .sort((a, b) => (b.result?.points ?? -1) - (a.result?.points ?? -1))
@@ -393,25 +460,111 @@ function Reveal({
     <div className="mt-6 animate-in fade-in-0 zoom-in-95">
       <p className="text-sm uppercase tracking-widest text-muted-foreground">Actual price</p>
       <p data-testid="actual-price" className="text-5xl font-black text-primary">
-        {formatCents(round.price ?? 0)}
+        {formatCents(price)}
       </p>
+
+      {verdict && (
+        <p data-testid="verdict" className="mt-2 text-sm">
+          <span className={cn('font-bold', TONE_CLASS[verdict.tone])}>{verdict.label}</span>{' '}
+          <span className="text-muted-foreground">{verdict.detail}.</span>
+        </p>
+      )}
+
+      <GuessBar price={price} rows={rows} userId={userId} />
+
       <ul className="mt-4 divide-y divide-border rounded-xl border border-border">
         {rows.map(({ userId: uid, result }) => (
           <li
             key={uid}
-            className={cn('flex items-center justify-between px-3 py-2 text-sm', uid === userId && 'bg-primary/5')}
+            className={cn('flex items-center justify-between gap-3 px-3 py-2 text-sm', uid === userId && 'bg-primary/5')}
           >
-            <span className="font-medium">{nameOf(uid)}</span>
+            <span className="flex-1 truncate font-medium">{nameOf(uid)}</span>
             <span className="text-muted-foreground">
               {result ? formatCents(result.guess) : 'no guess'}
             </span>
-            <span className="w-20 text-right font-semibold tabular-nums">
-              +{result?.points ?? 0}
+            <span className="w-28 text-right tabular-nums">
+              <span className="font-semibold">+{result?.points ?? 0}</span>
+              <span className="text-muted-foreground"> / {MAX_POINTS}</span>
             </span>
           </li>
         ))}
       </ul>
     </div>
+  )
+}
+
+/** A number line from $0: the real price as a yellow line, each guess as a dot. */
+function GuessBar({
+  price,
+  rows,
+  userId,
+}: {
+  price: number
+  rows: { userId: string; result?: { guess: number; points: number } }[]
+  userId: string | null
+}) {
+  const guesses = rows.filter((r) => r.result)
+  if (guesses.length === 0 || price <= 0) return null
+  const max = Math.max(price, ...guesses.map((r) => r.result!.guess)) * 1.15
+  const pos = (cents: number) => `${(cents / max) * 100}%`
+
+  return (
+    <div className="mt-5" aria-hidden>
+      <div className="relative h-3 rounded-full bg-secondary">
+        <div className="absolute inset-y-0 left-0 rounded-full bg-primary/25" style={{ width: pos(price) }} />
+        <div className="absolute -inset-y-1.5 w-1 -translate-x-1/2 rounded bg-primary" style={{ left: pos(price) }} />
+        {guesses.map((r) => (
+          <div
+            key={r.userId}
+            className={cn(
+              'absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background',
+              r.userId === userId ? 'z-10 bg-foreground' : 'bg-muted-foreground',
+            )}
+            style={{ left: pos(r.result!.guess) }}
+          />
+        ))}
+      </div>
+      <div className="mt-1.5 flex justify-between text-xs text-muted-foreground">
+        <span>$0</span>
+        <span className="flex items-center gap-3">
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-foreground" /> your guess
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-2.5 w-1 rounded bg-primary" /> real price
+          </span>
+        </span>
+      </div>
+    </div>
+  )
+}
+
+/** Products already revealed in this game, shown under the current round. */
+function PastRounds({ rounds, currentIndex }: { rounds: Round[]; currentIndex: number }) {
+  const past = rounds
+    .filter((r) => r.index < currentIndex && isRevealed(r))
+    .sort((a, b) => b.index - a.index)
+  if (past.length === 0) return null
+  return (
+    <section className="mt-6">
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        Earlier this game
+      </h3>
+      <ul className="grid gap-2 sm:grid-cols-2">
+        {past.map((r) => (
+          <li key={r.index} className="flex items-center gap-3 rounded-xl border border-border bg-card p-2">
+            <img
+              src={r.image}
+              alt=""
+              className="h-12 w-12 shrink-0 rounded-lg bg-white object-contain p-1"
+              referrerPolicy="no-referrer"
+            />
+            <span className="line-clamp-2 flex-1 text-xs">{r.title}</span>
+            <span className="pr-1 text-sm font-bold text-primary">{formatCents(r.price ?? 0)}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
 
@@ -481,7 +634,7 @@ function FinalResults({ rounds }: { rounds: Round[] }) {
                 referrerPolicy="no-referrer"
               />
               <span className="line-clamp-2 flex-1 text-sm">{r.title}</span>
-              <span className="font-bold text-primary">{r.price !== null ? formatCents(r.price) : '—'}</span>
+              <span className="font-bold text-primary">{isRevealed(r) ? formatCents(r.price!) : '—'}</span>
             </li>
           ))}
       </ul>

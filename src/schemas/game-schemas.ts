@@ -49,6 +49,8 @@ export const playersSchema: CollectionSchema = {
   columns: [
     { name: 'gameId', storage: 'text', interpretation: 'plain', required: true },
     { name: 'userId', storage: 'text', interpretation: 'plain', required: true },
+    /** Copy of the game's room code, so a player's "games in progress" list can link back. */
+    { name: 'code', storage: 'text', interpretation: 'plain' },
     { name: 'score', storage: 'number', interpretation: 'plain' },
     /** Index of the last round this player guessed in (-1 = none yet). */
     { name: 'guessedRound', storage: 'number', interpretation: 'plain' },
