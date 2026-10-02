@@ -11,6 +11,7 @@
 import type { ActionHandler, ActionResult, ActionTools } from 'deepspace/worker'
 import type { Env } from '../../worker'
 import {
+  canControlGame,
   findCategory,
   guessToCents,
   ids,
@@ -131,6 +132,25 @@ async function ensureProductPool(tools: ActionTools, category: Category, needed:
   }
   pool = await load()
   return pool
+}
+
+/**
+ * Host-or-fallback permission check for reveal/next. The game row's
+ * `updatedAt` only changes when the phase changes, so it tells us how long
+ * the game has been waiting on the host. Uses server time, not the client's.
+ */
+async function mayControl(
+  tools: ActionTools,
+  game: { recordId: string; updatedAt: string; data: Game },
+  userId: string,
+) {
+  const isHost = game.data.hostId === userId
+  const me = isHost ? null : await tools.get('players', ids.player(game.recordId, userId))
+  return canControlGame({
+    isHost,
+    isPlayer: isHost || !!me?.success,
+    idleMs: Date.now() - Date.parse(game.updatedAt),
+  })
 }
 
 async function generateUniqueCode(tools: ActionTools): Promise<string | null> {
@@ -327,21 +347,21 @@ export const actions: Record<string, ActionHandler<Env>> = {
     return { success: true, data: { revealed: allIn } }
   },
 
-  /** Host only: reveal now, without waiting for stragglers. */
+  /** Host (or anyone, if the host has gone quiet): reveal without waiting for stragglers. */
   revealRound: async ({ userId, params, tools }) => {
     const game = await loadGame(tools, params.gameId)
     if (!game) return fail('Game not found')
-    if (game.data.hostId !== userId) return fail('Only the host can reveal')
     if (game.data.status !== 'guessing') return fail('This round is already revealed')
+    if (!(await mayControl(tools, game, userId))) return fail('Only the host can reveal right now')
     return revealCurrentRound(tools, game.recordId, game.data)
   },
 
-  /** Host only: move to the next round, or finish after the last one. */
+  /** Host (or anyone, if the host has gone quiet): next round, or finish after the last. */
   nextRound: async ({ userId, params, tools }) => {
     const game = await loadGame(tools, params.gameId)
     if (!game) return fail('Game not found')
-    if (game.data.hostId !== userId) return fail('Only the host can continue')
     if (game.data.status !== 'revealed') return fail('Reveal this round first')
+    if (!(await mayControl(tools, game, userId))) return fail('Only the host can continue right now')
 
     const next = game.data.roundIndex + 1
     if (next >= game.data.totalRounds) {

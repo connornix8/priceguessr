@@ -113,3 +113,15 @@ export function verdictFor(guessCents: number, priceCents: number): Verdict {
   if (pct <= 50) return { label: 'A bit off', detail, tone: 'meh' }
   return { label: 'Way off…', detail, tone: 'bad' }
 }
+
+/** If the host does nothing for this long, any player may move the game on. */
+export const HOST_AWAY_MS = 60_000
+
+/**
+ * Who may reveal or continue: the host always; any other player only once
+ * the game has sat untouched for HOST_AWAY_MS (the host probably left).
+ */
+export function canControlGame(opts: { isHost: boolean; isPlayer: boolean; idleMs: number }): boolean {
+  if (opts.isHost) return true
+  return opts.isPlayer && opts.idleMs >= HOST_AWAY_MS
+}

@@ -7,6 +7,8 @@ import {
   scoreGuess,
   shuffle,
   verdictFor,
+  canControlGame,
+  HOST_AWAY_MS,
 } from './logic'
 
 describe('parsePriceToCents', () => {
@@ -72,5 +74,18 @@ describe('verdictFor', () => {
     expect(verdictFor(6000, 6499)).toMatchObject({ label: 'So close!', detail: 'You were 8% too low' })
     expect(verdictFor(6499, 6499)).toMatchObject({ label: 'Spot on!', detail: 'You nailed the exact price' })
     expect(verdictFor(20000, 6499)).toMatchObject({ label: 'Way off…', tone: 'bad' })
+  })
+})
+
+describe('canControlGame', () => {
+  it('always lets the host act', () => {
+    expect(canControlGame({ isHost: true, isPlayer: true, idleMs: 0 })).toBe(true)
+  })
+  it('lets other players act only after the host has been away a while', () => {
+    expect(canControlGame({ isHost: false, isPlayer: true, idleMs: HOST_AWAY_MS - 1 })).toBe(false)
+    expect(canControlGame({ isHost: false, isPlayer: true, idleMs: HOST_AWAY_MS })).toBe(true)
+  })
+  it('never lets a non-player act', () => {
+    expect(canControlGame({ isHost: false, isPlayer: false, idleMs: HOST_AWAY_MS * 10 })).toBe(false)
   })
 })

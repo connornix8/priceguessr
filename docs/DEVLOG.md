@@ -30,3 +30,17 @@ was checked or changed after testing.
   account. Amazon spend is already capped by the product cache (~$0.60 total),
   so the per-user limit only needs to stop spam: raised to 50/day.
 - Removed unused starter pages (API status, settings) and their flaky test.
+
+## Day 3 (Oct 2)
+
+- Owner asked: emojis or icons? Switched categories to Lucide icons (matches
+  the rest of the UI, renders the same on every OS, follows theme colors).
+- Owner asked: does the invite hold up with more people? Added a 4-player test:
+  simultaneous joins, simultaneous guesses, a mid-round joiner. Passed 4/4.
+  The test itself was wrong twice first (each screen says "You"; it read
+  scores before they arrived). Two hypotheses (test timing vs. scoring bug)
+  were separated by making the test wait: timing, not a bug.
+- Found a real gap: if the host leaves, nobody can continue. Owner approved a
+  fix: after 60s with no progress, any player in the game can reveal or
+  continue. The server checks the 60s with its own clock. Covered by unit
+  tests and a slow end-to-end test that closes the host's browser.

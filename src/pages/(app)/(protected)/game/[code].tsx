@@ -7,7 +7,7 @@
  * Writes go through callAction(...) — never straight to the database.
  */
 
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth, useQuery, useUserLookup } from 'deepspace'
 import { Check, Copy, Crown, ExternalLink, Star } from 'lucide-react'
@@ -18,6 +18,7 @@ import { callAction, type ActionName } from '../../../../game/api'
 import {
   findCategory,
   formatCents,
+  HOST_AWAY_MS,
   MAX_POINTS,
   normalizeRoomCode,
   verdictFor,
@@ -99,6 +100,7 @@ export default function GamePage() {
             key={currentRound.recordId}
             gameId={gameId}
             game={game}
+            gameUpdatedAt={gameRecord.updatedAt}
             round={currentRound.data}
             isHost={isHost}
             players={playerRows}
@@ -127,6 +129,23 @@ export default function GamePage() {
 
 /** A round counts as revealed only once the server has written a real price. */
 const isRevealed = (r: Round) => typeof r.price === 'number' && r.price > 0
+
+/**
+ * True once the game has gone HOST_AWAY_MS without a phase change, i.e. the
+ * host has probably left. The server re-checks this with its own clock.
+ */
+function useHostAway(updatedAt: string) {
+  const msLeft = () => Date.parse(updatedAt) + HOST_AWAY_MS - Date.now()
+  const [away, setAway] = useState(() => msLeft() <= 0)
+  useEffect(() => {
+    const wait = Date.parse(updatedAt) + HOST_AWAY_MS - Date.now()
+    setAway(wait <= 0)
+    if (wait <= 0) return
+    const timer = setTimeout(() => setAway(true), wait)
+    return () => clearTimeout(timer)
+  }, [updatedAt])
+  return away
+}
 
 function useAction() {
   const { error } = useToast()
@@ -295,6 +314,7 @@ function Lobby({
 function RoundView({
   gameId,
   game,
+  gameUpdatedAt,
   round,
   isHost,
   players,
@@ -302,12 +322,14 @@ function RoundView({
 }: {
   gameId: string
   game: Game
+  gameUpdatedAt: string
   round: Round
   isHost: boolean
   players: Player[]
   nameOf: (uid: string) => string
 }) {
   const { userId } = useAuth()
+  const hostAway = useHostAway(gameUpdatedAt)
   const { busy, run } = useAction()
   const [amount, setAmount] = useState('')
   // Guesses are hidden from every browser until the reveal, so we remember
@@ -379,15 +401,16 @@ function RoundView({
                   ? `Waiting on ${waitingOn.map((p) => nameOf(p.userId)).join(', ')}.`
                   : 'Everyone is in!'}
               </p>
-              {isHost && waitingOn.length > 0 && players.length > 1 && (
+              {(isHost || hostAway) && waitingOn.length > 0 && players.length > 1 && (
                 <Button
+                  data-testid="reveal-now"
                   variant="outline"
                   size="sm"
                   className="mt-3"
                   disabled={busy}
                   onClick={() => run('revealRound', { gameId })}
                 >
-                  Reveal now
+                  {isHost ? 'Reveal now' : 'Host away? Reveal now'}
                 </Button>
               )}
             </div>
@@ -410,6 +433,16 @@ function RoundView({
                   onClick={() => run('nextRound', { gameId })}
                 >
                   {isLastRound ? 'See final results' : 'Next product'}
+                </Button>
+              ) : hostAway ? (
+                <Button
+                  data-testid="next-round"
+                  size="lg"
+                  variant="secondary"
+                  loading={busy}
+                  onClick={() => run('nextRound', { gameId })}
+                >
+                  Host away? Continue
                 </Button>
               ) : (
                 <p className="text-sm text-muted-foreground">Waiting for the host to continue…</p>
