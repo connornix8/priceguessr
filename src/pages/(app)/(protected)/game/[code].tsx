@@ -13,6 +13,7 @@ import { useAuth, useQuery, useUserLookup } from 'deepspace'
 import { Check, Copy, Crown, ExternalLink, Star } from 'lucide-react'
 import { Button, Input, useToast } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { CategoryIcon } from '../../../../components/CategoryIcon'
 import { callAction, type ActionName } from '../../../../game/api'
 import {
   findCategory,
@@ -185,8 +186,9 @@ function GameHeader({ game, rounds }: { game: Game; rounds: Round[] }) {
           {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
         </button>
       </span>
-      <span>
-        {category?.emoji} {category?.label}
+      <span className="flex items-center gap-1.5">
+        <CategoryIcon id={game.category} />
+        {category?.label}
       </span>
       <span className="flex items-center gap-2">
         <span data-testid="round-label">{roundLabel}</span>

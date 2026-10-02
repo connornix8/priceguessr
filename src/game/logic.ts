@@ -6,18 +6,17 @@
 export interface Category {
   id: string
   label: string
-  emoji: string
   /** Amazon search phrases used to fill this category's product pool. */
   queries: string[]
 }
 
 export const CATEGORIES: Category[] = [
-  { id: 'kitchen', label: 'Kitchen', emoji: '🍳', queries: ['kitchen gadgets', 'cookware set', 'coffee accessories'] },
-  { id: 'tech', label: 'Tech', emoji: '🎧', queries: ['tech gadgets', 'phone accessories', 'smart home devices'] },
-  { id: 'toys', label: 'Toys & Games', emoji: '🧸', queries: ['toys for kids', 'board games', 'lego sets'] },
-  { id: 'home', label: 'Home', emoji: '🛋️', queries: ['home decor', 'bedroom accessories', 'bathroom organizers'] },
-  { id: 'outdoors', label: 'Outdoors', emoji: '⛺', queries: ['camping gear', 'garden tools', 'fitness equipment'] },
-  { id: 'weird', label: 'Weird Stuff', emoji: '🦄', queries: ['weird gifts', 'funny gag gifts', 'unusual gadgets'] },
+  { id: 'kitchen', label: 'Kitchen', queries: ['kitchen gadgets', 'cookware set', 'coffee accessories'] },
+  { id: 'tech', label: 'Tech', queries: ['tech gadgets', 'phone accessories', 'smart home devices'] },
+  { id: 'toys', label: 'Toys & Games', queries: ['toys for kids', 'board games', 'lego sets'] },
+  { id: 'home', label: 'Home', queries: ['home decor', 'bedroom accessories', 'bathroom organizers'] },
+  { id: 'outdoors', label: 'Outdoors', queries: ['camping gear', 'garden tools', 'fitness equipment'] },
+  { id: 'weird', label: 'Weird Stuff', queries: ['weird gifts', 'funny gag gifts', 'unusual gadgets'] },
 ]
 
 export const ROUND_OPTIONS = [3, 5, 8] as const

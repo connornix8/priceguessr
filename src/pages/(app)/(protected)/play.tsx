@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth, useQuery } from 'deepspace'
 import { Button, Input, useToast } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { CategoryIcon } from '../../../components/CategoryIcon'
 import { callAction } from '../../../game/api'
 import { CATEGORIES, findCategory, normalizeRoomCode, ROUND_OPTIONS } from '../../../game/logic'
 
@@ -72,9 +73,10 @@ export default function PlayPage() {
                   : 'border-border bg-secondary/40 text-muted-foreground hover:text-foreground',
               )}
             >
-              <span className="text-xl" aria-hidden>
-                {c.emoji}
-              </span>
+              <CategoryIcon
+                id={c.id}
+                className={cn('h-5 w-5', category === c.id ? 'text-primary' : 'text-muted-foreground')}
+              />
               {c.label}
             </button>
           ))}
@@ -177,8 +179,9 @@ function ActiveGameRow({ code }: { code: string }) {
   return (
     <li className="flex items-center gap-3 rounded-xl border border-border bg-secondary/40 px-3 py-2 text-sm">
       <span className="font-mono font-bold tracking-widest text-primary">{code}</span>
+      <CategoryIcon id={game.category} className="text-muted-foreground" />
       <span className="flex-1 truncate text-muted-foreground">
-        {category?.emoji} {category?.label} · {progress}
+        {category?.label} · {progress}
       </span>
       <Link to={`/game/${code}`} className="font-semibold text-foreground hover:text-primary">
         Rejoin
