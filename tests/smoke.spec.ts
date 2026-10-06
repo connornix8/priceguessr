@@ -82,5 +82,6 @@ test.describe('Smoke tests', () => {
     await expect(page.getByText('Your account is created instantly')).toBeVisible()
     await page.getByTestId('signed-out-continue').click()
     await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeVisible()
+    await expect(page.getByText('Your account is created automatically')).toBeVisible()
   })
 })
