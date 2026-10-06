@@ -57,8 +57,11 @@ export default function Navigation() {
         to={item.path}
         aria-current={active ? 'page' : undefined}
         className={cn(
-          'px-3 py-1.5 text-sm',
-          active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+          // The current page gets a yellow underline so it reads as "you are here".
+          'border-b-2 px-3 py-1.5 text-sm',
+          active
+            ? 'border-primary font-semibold text-foreground'
+            : 'border-transparent text-muted-foreground hover:text-foreground',
         )}
       >
         {item.label}
