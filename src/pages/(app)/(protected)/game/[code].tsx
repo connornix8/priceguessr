@@ -11,7 +11,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth, useQuery, useUserLookup } from 'deepspace'
 import { Check, Copy, Crown, ExternalLink, Star } from 'lucide-react'
-import { Button, Input, useToast } from '@/components/ui'
+import { Button, buttonVariants, Input, useToast } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { CategoryIcon } from '../../../../components/CategoryIcon'
 import { callAction, type ActionName } from '../../../../game/api'
@@ -745,8 +745,14 @@ function FinalResults({
             </li>
           ))}
       </ul>
-      <Link to="/play" className="mt-6 inline-block">
-        <Button size="lg">Play again</Button>
+      {/* A link styled as a button: a <button> nested inside a link is invalid
+          HTML and glitches in some browsers (it did on the owner's machine). */}
+      <Link
+        to="/play"
+        data-testid="play-again"
+        className={cn(buttonVariants({ size: 'lg' }), 'mt-6 font-semibold')}
+      >
+        Play again
       </Link>
     </section>
   )
