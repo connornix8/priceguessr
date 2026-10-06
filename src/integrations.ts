@@ -18,6 +18,7 @@
 export const integrations: Record<string, { billing: 'developer' | 'user' }> = {
   google: { billing: 'user' },
   // Product searches are paid by the app owner (players never need credits).
-  // Only server actions call it, behind sign-in and a per-user daily limit.
+  // Only server actions call it; src/server/http-routes.ts refuses browser calls
+  // to owner-billed integrations.
   amazon: { billing: 'developer' },
 }

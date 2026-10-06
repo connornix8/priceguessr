@@ -53,3 +53,17 @@ was checked or changed after testing.
 - Checked DeepSpace's careers FAQ after conflicting advice: AI coding tools are
   explicitly allowed ("We want to understand how you use AI tools").
 - Agent wrote the README; owner rewrites the submission note in their own words.
+- Owner's phone test: couldn't create an account with email. DeepSpace closes
+  public email sign-up platform-wide (Google/GitHub create accounts), so the
+  sign-in window and invite page now say so plainly.
+- Owner asked for a full audit by multiple agents. Three agents tested
+  navigation, gameplay, and security against a local copy and reported back;
+  each finding was checked before fixing. Fixed: anyone (even signed out) could
+  trigger owner-billed Amazon searches through the starter's generic
+  integration route (now refused for owner-billed integrations); product links
+  (which show the price) were sent before the reveal (now hidden until then);
+  sub-cent guesses; "locked in" lost on refresh; silent copy failures;
+  duplicate products in one game; join codes with spaces; 404 "Go home";
+  landing page had no way back to the game; small tap targets; winner summary
+  on the final screen. Left for later: stacking error toasts, Escape on the
+  DeepSpace sign-in window, a guest mode without accounts.

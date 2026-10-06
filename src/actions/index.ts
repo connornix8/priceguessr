@@ -170,9 +170,9 @@ async function generateUniqueCode(tools: ActionTools): Promise<string | null> {
 async function revealCurrentRound(tools: ActionTools, gameId: string, game: Game) {
   const roundId = ids.round(gameId, game.roundIndex)
 
-  const answer = await tools.get<{ price: number }>('answers', roundId)
+  const answer = await tools.get<{ price: number; link?: string }>('answers', roundId)
   if (!answer.success) return fail('Answer missing for this round')
-  const price = answer.data.record.data.price
+  const { price, link } = answer.data.record.data
 
   const guesses = await tools.query<{ userId: string; amount: number }>('guesses', {
     where: { roundId },
@@ -185,7 +185,7 @@ async function revealCurrentRound(tools: ActionTools, gameId: string, game: Game
     }
   }
 
-  await tools.update('rounds', roundId, { price, results })
+  await tools.update('rounds', roundId, { price, results, link: link ?? null })
   await tools.update('games', gameId, { status: 'revealed' })
 
   // Recompute every player's total from all revealed rounds.
@@ -244,12 +244,25 @@ export const actions: Record<string, ActionHandler<Env>> = {
     if (!code) return fail('Could not create a room code. Please try again.')
 
     const gameId = crypto.randomUUID()
-    const picks = shuffle(pool).slice(0, totalRounds)
+    // Amazon often lists the same item under different titles; skip repeats
+    // by price and link so a game never shows "the same" product twice.
+    const seen = new Set<string>()
+    const picks = shuffle(pool)
+      .filter((p) => {
+        const keys = [`price:${p.price}`, p.link ? `link:${p.link}` : '']
+        if (keys.some((k) => k && seen.has(k))) return false
+        keys.forEach((k) => k && seen.add(k))
+        return true
+      })
+      .slice(0, totalRounds)
+    if (picks.length < totalRounds) {
+      return fail('Not enough different products right now. Try fewer rounds or another category.')
+    }
 
     // Answers first, so a round never exists without its hidden price.
     for (const [index, product] of picks.entries()) {
       const roundId = ids.round(gameId, index)
-      await tools.create('answers', { gameId, price: product.price }, roundId)
+      await tools.create('answers', { gameId, price: product.price, link: product.link }, roundId)
       await tools.create(
         'rounds',
         {
@@ -258,7 +271,7 @@ export const actions: Record<string, ActionHandler<Env>> = {
           title: product.title,
           image: product.image,
           rating: product.rating,
-          link: product.link,
+          link: null, // hidden until reveal: the page shows the live price
           price: null,
           results: null,
         },
@@ -342,7 +355,10 @@ export const actions: Record<string, ActionHandler<Env>> = {
     )
     if (allIn) {
       const fresh = await loadGame(tools, gameId)
-      if (fresh?.data.status === 'guessing') await revealCurrentRound(tools, gameId, fresh.data)
+      // Same phase AND same round: if the host already moved on, don't reveal the new round.
+      if (fresh?.data.status === 'guessing' && fresh.data.roundIndex === game.data.roundIndex) {
+        await revealCurrentRound(tools, gameId, fresh.data)
+      }
     }
     return { success: true, data: { revealed: allIn } }
   },
@@ -351,7 +367,9 @@ export const actions: Record<string, ActionHandler<Env>> = {
   revealRound: async ({ userId, params, tools }) => {
     const game = await loadGame(tools, params.gameId)
     if (!game) return fail('Game not found')
-    if (game.data.status !== 'guessing') return fail('This round is already revealed')
+    if (game.data.status !== 'guessing') {
+      return fail(game.data.status === 'revealed' ? 'This round is already revealed' : 'There is no round to reveal right now')
+    }
     if (!(await mayControl(tools, game, userId))) return fail('Only the host can reveal right now')
     return revealCurrentRound(tools, game.recordId, game.data)
   },
@@ -360,7 +378,9 @@ export const actions: Record<string, ActionHandler<Env>> = {
   nextRound: async ({ userId, params, tools }) => {
     const game = await loadGame(tools, params.gameId)
     if (!game) return fail('Game not found')
-    if (game.data.status !== 'revealed') return fail('Reveal this round first')
+    if (game.data.status !== 'revealed') {
+      return fail(game.data.status === 'guessing' ? 'Reveal this round first' : 'There is no round to continue from')
+    }
     if (!(await mayControl(tools, game, userId))) return fail('Only the host can continue right now')
 
     const next = game.data.roundIndex + 1

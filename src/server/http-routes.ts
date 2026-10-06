@@ -232,6 +232,14 @@ export function registerAuthAndIntegrationRoutes(app: Hono<AppContext>): void {
     const integrationName = c.req.param('name')
     const billingMode = integrations[integrationName]?.billing ?? 'developer'
 
+    // Price Guessr: owner-billed integrations (Amazon search) are only ever
+    // called by server actions, behind sign-in, the product cache, and the
+    // daily limit. Letting the browser reach them here would let anyone,
+    // even signed out, spend the owner's credits directly.
+    if (billingMode === 'developer') {
+      return c.json({ error: 'This integration is only available to the server' }, 403)
+    }
+
     const auth = await resolveAuth(c.req.raw, c.env)
     if (!auth && billingMode === 'user') {
       return c.json({ error: 'Sign in required for this integration' }, 401)
@@ -242,14 +250,10 @@ export function registerAuthAndIntegrationRoutes(app: Hono<AppContext>): void {
       'Content-Type': c.req.header('Content-Type') ?? 'application/json',
     }
 
-    // The api-worker bills the JWT subject: developer mode uses the app owner;
-    // user mode forwards the caller. There is no client billing override.
-    if (billingMode === 'developer') {
-      headers['Authorization'] = `Bearer ${c.env.APP_OWNER_JWT}`
-    } else {
-      const token = c.req.header('Authorization')?.slice(7)
-      if (token) headers['Authorization'] = `Bearer ${token}`
-    }
+    // Only user-billed integrations reach this point, so the api-worker bills
+    // the caller's own JWT. There is no client billing override.
+    const token = c.req.header('Authorization')?.slice(7)
+    if (token) headers['Authorization'] = `Bearer ${token}`
 
     // Identify this app for per-app integrations. Pre-first-deploy there is no
     // token, so omit both headers and let the api-worker fail closed.

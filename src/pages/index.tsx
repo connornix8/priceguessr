@@ -19,10 +19,18 @@ export default function Landing() {
       <Seo {...seo} path="/" />
       <div data-testid="static-landing" className="flex min-h-screen flex-col">
         <header className="mx-auto flex w-full max-w-5xl items-center px-4 py-5">
-          <span className="flex items-center gap-2 font-bold">
+          <Link to="/" className="flex items-center gap-2 font-bold">
             <span className="rounded-md bg-primary px-1.5 py-0.5 text-xs font-black text-primary-foreground">$?</span>
             Price Guessr
-          </span>
+          </Link>
+          <div className="flex-1" />
+          {/* Static page (no auth here), so one link covers both signed-in and signed-out visitors. */}
+          <Link
+            to="/play"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:border-primary"
+          >
+            Play
+          </Link>
         </header>
 
         <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center px-4 py-12">

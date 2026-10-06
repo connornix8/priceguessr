@@ -108,7 +108,7 @@ export default function GamePage() {
           />
         )}
         {game.status === 'finished' && (
-          <FinalResults rounds={rounds.records.map((r) => r.data)} />
+          <FinalResults rounds={rounds.records.map((r) => r.data)} players={playerRows} nameOf={nameOf} />
         )}
         {(game.status === 'guessing' || game.status === 'revealed') && (
           <PastRounds rounds={rounds.records.map((r) => r.data)} currentIndex={game.roundIndex} />
@@ -126,6 +126,27 @@ export default function GamePage() {
 }
 
 // ---------------------------------------------------------------------------
+
+/**
+ * Copy the invite link. Some phones and in-app browsers block the clipboard,
+ * so on failure we show the link in a toast to copy by hand instead of
+ * failing silently.
+ */
+function useCopyInvite(code: string) {
+  const { info } = useToast()
+  const [copied, setCopied] = useState(false)
+  async function copy() {
+    const link = `${window.location.origin}/game/${code}`
+    try {
+      await navigator.clipboard.writeText(link)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      info('Copy this invite link', link)
+    }
+  }
+  return { copied, copy }
+}
 
 /** A round counts as revealed only once the server has written a real price. */
 const isRevealed = (r: Round) => typeof r.price === 'number' && r.price > 0
@@ -174,13 +195,7 @@ function Centered({ children }: { children: React.ReactNode }) {
 
 function GameHeader({ game, rounds }: { game: Game; rounds: Round[] }) {
   const category = findCategory(game.category)
-  const [copied, setCopied] = useState(false)
-
-  async function copyLink() {
-    await navigator.clipboard.writeText(`${window.location.origin}/game/${game.code}`)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }
+  const { copied, copy: copyLink } = useCopyInvite(game.code)
 
   const roundLabel =
     game.status === 'lobby'
@@ -220,7 +235,7 @@ function GameHeader({ game, rounds }: { game: Game; rounds: Round[] }) {
 /** One dot per round: filled = done, ringed = current, faint = still to come. */
 function ProgressDots({ game, rounds }: { game: Game; rounds: Round[] }) {
   return (
-    <span className="flex gap-1" aria-hidden>
+    <span className="flex items-center gap-2.5 pl-1" aria-hidden>
       {Array.from({ length: game.totalRounds }, (_, i) => {
         const done = rounds.some((r) => r.index === i && isRevealed(r))
         const current = i === game.roundIndex && game.status !== 'finished'
@@ -230,7 +245,7 @@ function ProgressDots({ game, rounds }: { game: Game; rounds: Round[] }) {
             className={cn(
               'h-2.5 w-2.5 rounded-full',
               done ? 'bg-primary' : 'bg-secondary',
-              current && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
+              current && 'ring-2 ring-primary ring-offset-1 ring-offset-background',
             )}
           />
         )
@@ -269,14 +284,7 @@ function Lobby({
   playerCount: number
 }) {
   const { busy, run } = useAction()
-  const [copied, setCopied] = useState(false)
-  const link = `${window.location.origin}/game/${code}`
-
-  async function copyLink() {
-    await navigator.clipboard.writeText(link)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }
+  const { copied, copy: copyLink } = useCopyInvite(code)
 
   return (
     <section className="rounded-2xl border border-border bg-card p-8 text-center">
@@ -335,6 +343,10 @@ function RoundView({
   // Guesses are hidden from every browser until the reveal, so we remember
   // our own locked-in guess locally just to show it back.
   const [myGuess, setMyGuess] = useState<number | null>(null)
+  // The server's record of who has guessed survives a page refresh, even
+  // though our remembered amount doesn't.
+  const lockedIn =
+    myGuess !== null || players.some((p) => p.userId === userId && p.guessedRound === game.roundIndex)
   const revealed = game.status === 'revealed' && isRevealed(round)
 
   const waitingOn = players.filter((p) => p.guessedRound !== game.roundIndex)
@@ -350,7 +362,7 @@ function RoundView({
   return (
     <section className="overflow-hidden rounded-2xl border border-border bg-card">
       <div className="grid gap-0 md:grid-cols-2">
-        <div className="flex items-center justify-center bg-white p-6">
+        <div className="flex min-h-64 items-center justify-center bg-white p-6 md:min-h-80">
           <img
             src={round.image}
             alt={round.title}
@@ -390,13 +402,15 @@ function RoundView({
                   />
                 </div>
                 <Button data-testid="submit-guess" type="submit" size="lg" className="h-14" loading={busy}>
-                  {myGuess === null ? 'Lock in' : 'Change'}
+                  {lockedIn ? 'Change' : 'Lock in'}
                 </Button>
               </form>
               <p className="mt-3 text-sm text-muted-foreground" data-testid="guess-status">
                 {myGuess !== null
                   ? `Locked in at ${formatCents(Math.round(myGuess * 100))}. `
-                  : ''}
+                  : lockedIn
+                    ? "You're locked in. "
+                    : ''}
                 {waitingOn.length > 0
                   ? `Waiting on ${waitingOn.map((p) => nameOf(p.userId)).join(', ')}.`
                   : 'Everyone is in!'}
@@ -650,10 +664,38 @@ function Scoreboard({
   )
 }
 
-function FinalResults({ rounds }: { rounds: Round[] }) {
+function FinalResults({
+  rounds,
+  players,
+  nameOf,
+}: {
+  rounds: Round[]
+  players: Player[]
+  nameOf: (uid: string) => string
+}) {
+  const ranked = [...players].sort((a, b) => b.score - a.score)
+  const top = ranked[0]
+  const tied = ranked.filter((p) => p.score === top?.score).length > 1
   return (
     <section className="rounded-2xl border border-border bg-card p-6">
       <h2 className="text-3xl font-black">Game over!</h2>
+      {top && (
+        <p data-testid="winner" className="mt-2 text-lg">
+          {ranked.length === 1 ? (
+            <>
+              You scored <span className="font-bold text-primary">{top.score}</span> of{' '}
+              {MAX_POINTS * rounds.length} possible points.
+            </>
+          ) : tied ? (
+            <>It's a tie at <span className="font-bold text-primary">{top.score}</span> points!</>
+          ) : (
+            <>
+              <span className="font-bold text-primary">{nameOf(top.userId)}</span>{' '}
+              {nameOf(top.userId) === 'You' ? 'win' : 'wins'} with {top.score} points!
+            </>
+          )}
+        </p>
+      )}
       <p className="mt-1 text-sm text-muted-foreground">
         Max {MAX_POINTS} points per product. Here's what everything really cost:
       </p>

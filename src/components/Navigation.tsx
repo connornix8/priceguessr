@@ -56,6 +56,7 @@ export default function Navigation() {
       <Link
         key={item.path}
         to={item.path}
+        onClick={() => setMobileMenuOpen(false)}
         aria-current={active ? 'page' : undefined}
         className={cn(
           // The current page gets a yellow underline so it reads as "you are here".
@@ -142,12 +143,12 @@ export default function Navigation() {
               onClick={() => setShowAuthModal(true)}
               className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              Sign up / Sign in
+              Sign up or sign in
             </button>
           )}
 
           <button
-            className="inline-flex h-8 w-8 items-center justify-center text-muted-foreground hover:text-foreground md:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground md:hidden"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
             aria-label="Toggle menu"
             aria-expanded={mobileMenuOpen}

@@ -42,8 +42,10 @@ export function parsePriceToCents(raw: unknown): number | null {
 export function guessToCents(dollars: unknown): number | null {
   const n = typeof dollars === 'string' ? Number(dollars) : dollars
   if (typeof n !== 'number' || !Number.isFinite(n)) return null
-  if (n <= 0 || n > MAX_GUESS_DOLLARS) return null
-  return Math.round(n * 100)
+  if (n > MAX_GUESS_DOLLARS) return null
+  const cents = Math.round(n * 100)
+  // Check after rounding, so $0.004 can't sneak in as a $0.00 guess.
+  return cents >= 1 ? cents : null
 }
 
 /**

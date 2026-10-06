@@ -54,7 +54,7 @@ function SignedOutPanel() {
             </p>
           </>
         ) : (
-          <h1 className="text-lg font-semibold text-foreground">Sign in or create an account</h1>
+          <h1 className="text-lg font-semibold text-foreground">Sign up or sign in</h1>
         )}
         <Button data-testid="signed-out-continue" className="mt-6 w-full" size="lg" onClick={() => setShowAuthModal(true)}>
           Sign up or sign in

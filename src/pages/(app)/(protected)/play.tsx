@@ -122,7 +122,8 @@ export default function PlayPage() {
           <Input
             data-testid="join-code"
             value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 4))}
+            // Letters only (drops spaces/digits from pastes) before trimming to 4.
+            onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4))}
             placeholder="ABCD"
             aria-label="Room code"
             autoCapitalize="characters"
@@ -177,14 +178,18 @@ function ActiveGameRow({ code }: { code: string }) {
   const category = findCategory(game.category)
   const progress = game.status === 'lobby' ? 'In lobby' : `Round ${game.roundIndex + 1} of ${game.totalRounds}`
   return (
-    <li className="flex items-center gap-3 rounded-xl border border-border bg-secondary/40 px-3 py-2 text-sm">
-      <span className="font-mono font-bold tracking-widest text-primary">{code}</span>
-      <CategoryIcon id={game.category} className="text-muted-foreground" />
-      <span className="flex-1 truncate text-muted-foreground">
-        {category?.label} · {progress}
-      </span>
-      <Link to={`/game/${code}`} className="font-semibold text-foreground hover:text-primary">
-        Rejoin
+    <li>
+      {/* The whole row is the link, so it's easy to tap on a phone. */}
+      <Link
+        to={`/game/${code}`}
+        className="flex min-h-12 items-center gap-3 rounded-xl border border-border bg-secondary/40 px-3 py-2 text-sm hover:border-primary"
+      >
+        <span className="font-mono font-bold tracking-widest text-primary">{code}</span>
+        <CategoryIcon id={game.category} className="text-muted-foreground" />
+        <span className="flex-1 truncate text-muted-foreground">
+          {category?.label} · {progress}
+        </span>
+        <span className="font-semibold text-foreground">Rejoin</span>
       </Link>
     </li>
   )

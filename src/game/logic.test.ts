@@ -35,6 +35,7 @@ describe('guessToCents', () => {
     expect(guessToCents(-5)).toBeNull()
     expect(guessToCents('abc')).toBeNull()
     expect(guessToCents(1_000_000)).toBeNull()
+    expect(guessToCents(0.004)).toBeNull() // would round to $0.00
   })
 })
 

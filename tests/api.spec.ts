@@ -24,4 +24,9 @@ test.describe('Game actions', () => {
       expect(res.status(), name).toBe(401)
     }
   })
+
+  test('browsers cannot spend the owner\'s Amazon credits directly', async ({ request }) => {
+    const res = await request.post('/api/integrations/amazon/search-products', { data: { query: 'x' } })
+    expect(res.status()).toBe(403)
+  })
 })

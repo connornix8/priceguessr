@@ -71,6 +71,7 @@ export const roundsSchema: CollectionSchema = {
     { name: 'title', storage: 'text', interpretation: 'plain' },
     { name: 'image', storage: 'text', interpretation: { kind: 'url' } },
     { name: 'rating', storage: 'number', interpretation: 'plain' },
+    /** Amazon link (shows the price), copied from `answers` at reveal time. */
     { name: 'link', storage: 'text', interpretation: { kind: 'url' } },
     /** Real price in cents — written only at reveal time. */
     { name: 'price', storage: 'number', interpretation: 'plain' },
@@ -86,6 +87,8 @@ export const answersSchema: CollectionSchema = {
   columns: [
     { name: 'gameId', storage: 'text', interpretation: 'plain', required: true },
     { name: 'price', storage: 'number', interpretation: 'plain', required: true },
+    /** Amazon link; it shows the current price, so it's hidden until reveal too. */
+    { name: 'link', storage: 'text', interpretation: { kind: 'url' } },
   ],
   permissions: SERVER_ONLY,
 }
