@@ -74,4 +74,13 @@ test.describe('Smoke tests', () => {
     await page.getByTestId('app-navigation').getByRole('link', { name: /Price Guessr/ }).click()
     await expect(page.getByTestId('static-landing')).toBeVisible()
   })
+
+  test('signed-out invite link explains how to join and sign up', async ({ page }) => {
+    await page.goto('/game/abcd')
+    await expect(page.getByText("You're invited")).toBeVisible()
+    await expect(page.getByText('ABCD')).toBeVisible()
+    await expect(page.getByText('Your account is created instantly')).toBeVisible()
+    await page.getByTestId('signed-out-continue').click()
+    await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeVisible()
+  })
 })
