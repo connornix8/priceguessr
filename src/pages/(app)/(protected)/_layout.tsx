@@ -13,18 +13,31 @@
  * overlay). The sign-in overlay opens on demand and can be dismissed.
  */
 
-import { useState } from 'react'
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AuthGate } from 'deepspace'
 import { SignInOverlay } from '../../../components/SignInOverlay'
+import { savePendingInvite, takePendingInvite } from '../../../game/pending-invite'
 import { Button } from '@/components/ui'
 
 export default function ProtectedLayout() {
   return (
     <AuthGate fallback={<SignedOutPanel />}>
+      <ResumeInvite />
       <Outlet />
     </AuthGate>
   )
+}
+
+/** After sign-in, send an invited player back to the room they were invited to. */
+function ResumeInvite() {
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+  useEffect(() => {
+    const code = takePendingInvite()
+    if (code && pathname !== `/game/${code}`) navigate(`/game/${code}`, { replace: true })
+  }, []) // run once, right after sign-in
+  return null
 }
 
 /**
@@ -56,7 +69,15 @@ function SignedOutPanel() {
         ) : (
           <h1 className="text-lg font-semibold text-foreground">Sign up or sign in</h1>
         )}
-        <Button data-testid="signed-out-continue" className="mt-6 w-full" size="lg" onClick={() => setShowAuthModal(true)}>
+        <Button
+          data-testid="signed-out-continue"
+          className="mt-6 w-full"
+          size="lg"
+          onClick={() => {
+            if (inviteCode) savePendingInvite(inviteCode)
+            setShowAuthModal(true)
+          }}
+        >
           Sign up or sign in
         </Button>
         <p className="mt-3 text-xs text-muted-foreground">
