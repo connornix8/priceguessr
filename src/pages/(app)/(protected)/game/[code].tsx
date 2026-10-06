@@ -402,18 +402,33 @@ function RoundView({
                   />
                 </div>
                 <Button data-testid="submit-guess" type="submit" size="lg" className="h-14" loading={busy}>
-                  {lockedIn ? 'Change' : 'Lock in'}
+                  {lockedIn ? 'Update guess' : 'Lock in'}
                 </Button>
               </form>
-              <p className="mt-3 text-sm text-muted-foreground" data-testid="guess-status">
-                {myGuess !== null
-                  ? `Locked in at ${formatCents(Math.round(myGuess * 100))}. `
-                  : lockedIn
-                    ? "You're locked in. "
-                    : ''}
+              {/* Make "you're locked in" impossible to miss: in a play-test the
+                  owner didn't notice their guess had already been submitted. */}
+              <p
+                data-testid="guess-status"
+                className={cn(
+                  'mt-3 rounded-lg px-3 py-2 text-sm',
+                  lockedIn
+                    ? 'border border-success/40 bg-success/10 text-foreground'
+                    : 'text-muted-foreground',
+                )}
+              >
+                {lockedIn && (
+                  <span className="font-semibold text-success">
+                    ✓ {myGuess !== null ? `Locked in at ${formatCents(Math.round(myGuess * 100))}.` : "You're locked in."}{' '}
+                  </span>
+                )}
                 {waitingOn.length > 0
                   ? `Waiting on ${waitingOn.map((p) => nameOf(p.userId)).join(', ')}.`
                   : 'Everyone is in!'}
+                {lockedIn && waitingOn.length > 0 && (
+                  <span className="block text-xs text-muted-foreground">
+                    The price is revealed when everyone has locked in. You can update your guess until then.
+                  </span>
+                )}
               </p>
               {(isHost || hostAway) && waitingOn.length > 0 && players.length > 1 && (
                 <Button
