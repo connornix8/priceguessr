@@ -68,4 +68,10 @@ test.describe('Smoke tests', () => {
     await waitForApp(page)
     await expect(page.locator('text=404')).toBeVisible()
   })
+
+  test('logo in the app nav goes to the home page', async ({ page }) => {
+    await page.goto('/play')
+    await page.getByTestId('app-navigation').getByRole('link', { name: /Price Guessr/ }).click()
+    await expect(page.getByTestId('static-landing')).toBeVisible()
+  })
 })

@@ -70,7 +70,7 @@ export default function Navigation() {
     <>
       <nav data-testid="app-navigation" className="border-b border-border bg-background">
         <div className="mx-auto flex h-12 max-w-7xl items-center gap-4 px-4">
-          <Link to="/play" className="flex items-center gap-2 text-sm font-bold text-foreground">
+          <Link to="/" className="flex items-center gap-2 text-sm font-bold text-foreground">
             <span className="rounded-md bg-primary px-1.5 py-0.5 text-xs font-black text-primary-foreground">$?</span>
             Price Guessr
           </Link>
