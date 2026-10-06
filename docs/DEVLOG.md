@@ -44,3 +44,12 @@ was checked or changed after testing.
   fix: after 60s with no progress, any player in the game can reveal or
   continue. The server checks the 60s with its own clock. Covered by unit
   tests and a slow end-to-end test that closes the host's browser.
+
+## Day 5 (Oct 5)
+
+- Owner asked whether to add an AI feature. Decided no: hints would need the
+  model to know the price (breaks anti-cheat), commentary adds cost and delay,
+  generated products mean fake prices.
+- Checked DeepSpace's careers FAQ after conflicting advice: AI coding tools are
+  explicitly allowed ("We want to understand how you use AI tools").
+- Agent wrote the README; owner rewrites the submission note in their own words.
