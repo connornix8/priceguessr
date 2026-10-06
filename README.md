@@ -34,6 +34,9 @@ Pure game rules (scoring, price parsing, room codes, the host-away rule) live in
   role can read**. DeepSpace checks permissions inside the Durable Object
   before anything is sent over the WebSocket, so these rows never leave the
   server.
+- Owner-billed integrations (Amazon search) can't be called from the browser;
+  only server actions can spend the owner's credits.
+- Product links (which show the live price) are also hidden until the reveal.
 - Players can only **read** game state. Every write (create, join, guess,
   reveal, next) goes through a server action that checks the rules first: is
   the caller in this game, is it the right phase, are they the host.
@@ -50,6 +53,8 @@ Pure game rules (scoring, price parsing, room codes, the host-away rule) live in
   reveal or continue. The server checks the 60 seconds with its own clock.
 - **Rejoin:** "New game" lists your games in progress, so clicking away never
   loses a game.
+- **Invites survive sign-in:** an invited player who has to sign in first is
+  sent back to the room afterwards, instead of landing on the start page.
 
 ### Cost control
 
@@ -74,10 +79,15 @@ are free. A per-user limit of 50 new games a day only guards against spam.
 
 ## What I'd do next
 
+- **Guest mode:** let invited friends play with just a nickname. Today everyone
+  needs a Google or GitHub account (DeepSpace closes email sign-up), which is
+  the biggest source of friction when inviting someone new.
+- **"Own pace" mode:** each player goes through the products alone and the
+  scoreboard compares everyone at the end, as an alternative to live rounds.
 - Let players start the game if the host leaves while still in the lobby (today
   only rounds in progress have the host-away fallback).
 - Refresh cached prices on a schedule (DeepSpace cron) so they don't drift.
-- A daily solo challenge with a shared leaderboard.
+- Small polish: collapse repeated error toasts; close the sign-in window on Escape.
 
 ## Run it yourself
 

@@ -67,3 +67,14 @@ was checked or changed after testing.
   landing page had no way back to the game; small tap targets; winner summary
   on the final screen. Left for later: stacking error toasts, Escape on the
   DeepSpace sign-in window, a guest mode without accounts.
+- Owner's live play-tests with a second device and their brother found three
+  more issues, each confirmed from the server logs before fixing: (1) an
+  invited player who signed in landed on the start page and created their own
+  room (no join in the log); the invite is now remembered across sign-in.
+  (2) "Play again" was a button nested in a link (invalid HTML); now a real
+  link. (3) A locked-in guess wasn't obvious (log showed it was submitted 33s
+  before the other player); now a clear green "Locked in" box. Also: revealed
+  products link to Amazon (owner request).
+- Owner asked whether players could go at their own pace. Kept live rounds
+  (the shared reveal is the fun part and shows off real-time sync); listed an
+  "own pace" mode as a next step.
