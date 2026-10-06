@@ -62,7 +62,7 @@ function SignedOutPanel() {
         <p className="mt-3 text-xs text-muted-foreground">
           New here? Choose <strong className="text-foreground">Continue with Google</strong> or{' '}
           <strong className="text-foreground">GitHub</strong>. Your account is created instantly, no
-          password needed.
+          password needed. Email sign-in only works for existing DeepSpace accounts.
         </p>
         <Link
           to="/"
