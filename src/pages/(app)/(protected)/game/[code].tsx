@@ -601,19 +601,56 @@ function PastRounds({ rounds, currentIndex }: { rounds: Round[]; currentIndex: n
       </h3>
       <ul className="grid gap-2 sm:grid-cols-2">
         {past.map((r) => (
-          <li key={r.index} className="flex items-center gap-3 rounded-xl border border-border bg-card p-2">
-            <img
-              src={r.image}
-              alt=""
-              className="h-12 w-12 shrink-0 rounded-lg bg-white object-contain p-1"
-              referrerPolicy="no-referrer"
-            />
-            <span className="line-clamp-2 flex-1 text-xs">{r.title}</span>
-            <span className="pr-1 text-sm font-bold text-primary">{formatCents(r.price ?? 0)}</span>
+          <li key={r.index}>
+            <ProductCard round={r} className="gap-3 bg-card p-2" imageClass="h-12 w-12" titleClass="text-xs" />
           </li>
         ))}
       </ul>
     </section>
+  )
+}
+
+/**
+ * A revealed product with its real price. Once revealed, the card links to the
+ * product on Amazon (the link is only sent to browsers after the reveal).
+ */
+function ProductCard({
+  round: r,
+  className,
+  imageClass,
+  titleClass,
+}: {
+  round: Round
+  className: string
+  imageClass: string
+  titleClass: string
+}) {
+  const body = (
+    <>
+      <img
+        src={r.image}
+        alt=""
+        className={cn('shrink-0 rounded-lg bg-white object-contain p-1', imageClass)}
+        referrerPolicy="no-referrer"
+      />
+      <span className={cn('line-clamp-2 flex-1', titleClass)}>{r.title}</span>
+      <span className="pr-1 text-sm font-bold text-primary">{isRevealed(r) ? formatCents(r.price!) : '—'}</span>
+      {isRevealed(r) && r.link && <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />}
+    </>
+  )
+  const base = cn('flex items-center rounded-xl border border-border', className)
+  return isRevealed(r) && r.link ? (
+    <a
+      href={r.link}
+      target="_blank"
+      rel="noreferrer noopener"
+      aria-label={`View ${r.title} on Amazon`}
+      className={cn(base, 'transition-colors hover:border-primary')}
+    >
+      {body}
+    </a>
+  ) : (
+    <div className={base}>{body}</div>
   )
 }
 
@@ -703,15 +740,8 @@ function FinalResults({
         {[...rounds]
           .sort((a, b) => a.index - b.index)
           .map((r) => (
-            <li key={r.index} className="flex items-center gap-4 rounded-xl border border-border p-3">
-              <img
-                src={r.image}
-                alt=""
-                className="h-14 w-14 shrink-0 rounded-lg bg-white object-contain p-1"
-                referrerPolicy="no-referrer"
-              />
-              <span className="line-clamp-2 flex-1 text-sm">{r.title}</span>
-              <span className="font-bold text-primary">{isRevealed(r) ? formatCents(r.price!) : '—'}</span>
+            <li key={r.index}>
+              <ProductCard round={r} className="gap-4 p-3" imageClass="h-14 w-14" titleClass="text-sm" />
             </li>
           ))}
       </ul>

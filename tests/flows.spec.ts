@@ -41,6 +41,11 @@ test('join by typed code, play to the end, play again', async ({ users }) => {
   }
   for (const p of [host, guest]) await expect(p.page.getByText('Game over!')).toBeVisible()
 
+  // Every revealed product on the final screen links to Amazon.
+  const productLinks = guest.page.getByRole('link', { name: /on Amazon$/ })
+  await expect(productLinks).toHaveCount(3)
+  await expect(productLinks.first()).toHaveAttribute('href', /amazon\./)
+
   // "Play again" goes back to the start page.
   await guest.page.getByRole('button', { name: 'Play again' }).click()
   await expect(guest.page.getByTestId('create-room')).toBeVisible()
